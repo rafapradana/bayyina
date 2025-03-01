@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { ChevronLeft, Copy, Check, Volume2, Eye, EyeOff } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuran } from "@/context/QuranContext";
@@ -34,6 +34,9 @@ const SurahDetail = () => {
     }
     
     fetchSurahDetail(surahId);
+    
+    // Reset playing ayah when changing surahs
+    setPlayingAyah(null);
   }, [id, navigate, fetchSurahDetail]);
 
   // Scroll to top when surah changes
@@ -45,12 +48,12 @@ const SurahDetail = () => {
     window.scrollTo(0, 0);
   }, [id]);
 
-  // Copy ayah text to clipboard
-  const copyAyahText = async (text: string, ayahNumber: number) => {
+  // Copy ayah text to clipboard - memoized with useCallback
+  const copyAyahText = useCallback(async (text: string, ayahNumber: number) => {
     try {
       await navigator.clipboard.writeText(text);
       
-      setIsCopied({ ...isCopied, [ayahNumber]: true });
+      setIsCopied((prev) => ({ ...prev, [ayahNumber]: true }));
       
       toast({
         title: "Teks disalin",
@@ -68,17 +71,17 @@ const SurahDetail = () => {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  // Handle audio playback
-  const playAyahAudio = (ayahNumber: number) => {
+  // Handle audio playback - memoized with useCallback
+  const playAyahAudio = useCallback((ayahNumber: number) => {
     setPlayingAyah(ayahNumber);
-  };
+  }, []);
 
-  // When audio finishes playing
-  const handleAudioEnded = () => {
+  // When audio finishes playing - memoized with useCallback
+  const handleAudioEnded = useCallback(() => {
     setPlayingAyah(null);
-  };
+  }, []);
 
   if (isLoadingDetail || !currentSurah) {
     return (
@@ -181,16 +184,18 @@ const SurahDetail = () => {
           <div 
             key={ayah.nomorAyat} 
             className={cn(
-              "pb-6 border-b border-border/40 transition-all duration-500 group",
+              "pb-6 border-b border-border/40 transition-all duration-300 group",
               playingAyah === ayah.nomorAyat && "bg-primary/5 rounded-lg p-4 -mx-4"
             )}
+            // Loading all audio at once can cause performance issues, so let's add a lazy loading hint
+            data-ayah-id={ayah.nomorAyat}
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-medium text-sm">
                 {ayah.nomorAyat}
               </div>
               
-              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center space-x-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
                 <Button
                   variant="ghost"
                   size="icon"
@@ -236,6 +241,7 @@ const SurahDetail = () => {
             {playingAyah === ayah.nomorAyat && ayah.audio && (
               <div className="mt-4 animate-fade-in">
                 <AudioPlayer
+                  key={`audio-${ayah.nomorAyat}`}
                   src={ayah.audio}
                   title={`Ayat ${ayah.nomorAyat}`}
                   onEnded={handleAudioEnded}
