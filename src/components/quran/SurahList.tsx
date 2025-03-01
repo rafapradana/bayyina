@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useQuran } from "@/context/QuranContext";
 import { ChevronRight, BookOpen } from "lucide-react";
@@ -10,6 +9,10 @@ import { cn } from "@/lib/utils";
 const SurahList = () => {
   const { surahs, isLoading, searchSurahs } = useQuran();
   const [filteredSurahs, setFilteredSurahs] = useState(surahs);
+
+  useEffect(() => {
+    setFilteredSurahs(surahs);
+  }, [surahs]);
 
   const handleSearch = (query: string) => {
     setFilteredSurahs(searchSurahs(query));
