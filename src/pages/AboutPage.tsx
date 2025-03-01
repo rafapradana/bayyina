@@ -19,11 +19,7 @@ const AboutPage = () => {
           <div className="space-y-8">
             <section className="glass-card p-6">
               <h2 className="text-xl font-semibold mb-4">Apa itu Bayyina ?</h2>
-              <p className="text-muted-foreground mb-4">
-                Al-Quran Digital adalah aplikasi web yang memungkinkan pengguna 
-                untuk membaca Al-Quran lengkap dengan terjemahan bahasa Indonesia 
-                dan mendengarkan murottal (bacaan) dari setiap surah dan ayat.
-              </p>
+              <p className="text-muted-foreground mb-4">Bayyina adalah aplikasi web yang memungkinkan pengguna untuk membaca Al-Quran lengkap dengan terjemahan bahasa Indonesia dan mendengarkan murottal (bacaan) dari setiap surah dan ayat.</p>
               <p className="text-muted-foreground">
                 Aplikasi ini dirancang untuk memudahkan pengguna dalam mempelajari 
                 dan memahami Al-Quran dengan tampilan yang bersih, modern, dan nyaman 
