@@ -107,9 +107,7 @@ const AboutPage = () => {
                 Data Al-Quran yang ditampilkan dalam aplikasi ini diambil dari API 
                 yang disediakan oleh equran.id melalui:
               </p>
-              <div className="bg-muted p-3 rounded-md font-mono text-sm overflow-x-auto">
-                https://equran.id/api/v2
-              </div>
+              <div className="bg-muted p-3 rounded-md font-mono text-sm overflow-x-auto">https://equran.id/apidev/v2</div>
               <p className="text-sm text-muted-foreground mt-4">
                 Data ini mencakup teks Arab, teks latin, terjemahan bahasa Indonesia, 
                 dan file audio murottal untuk setiap surah dan ayat.
