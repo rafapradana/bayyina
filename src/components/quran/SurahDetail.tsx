@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { ChevronLeft, Copy, Check, Volume2, Eye, EyeOff } from "lucide-react";
 import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuran } from "@/context/QuranContext";
@@ -53,6 +53,7 @@ const SurahDetail = () => {
     try {
       await navigator.clipboard.writeText(text);
       
+      // Update state immutably to prevent unnecessary re-renders
       setIsCopied((prev) => ({ ...prev, [ayahNumber]: true }));
       
       toast({
@@ -61,6 +62,7 @@ const SurahDetail = () => {
         duration: 2000,
       });
       
+      // Clear copied state after delay
       setTimeout(() => {
         setIsCopied((prev) => ({ ...prev, [ayahNumber]: false }));
       }, 2000);
@@ -75,7 +77,7 @@ const SurahDetail = () => {
 
   // Handle audio playback - memoized with useCallback
   const playAyahAudio = useCallback((ayahNumber: number) => {
-    setPlayingAyah(ayahNumber);
+    setPlayingAyah((current) => current === ayahNumber ? null : ayahNumber);
   }, []);
 
   // When audio finishes playing - memoized with useCallback
@@ -83,44 +85,47 @@ const SurahDetail = () => {
     setPlayingAyah(null);
   }, []);
 
-  if (isLoadingDetail || !currentSurah) {
-    return (
-      <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
-        <div className="flex items-center mb-6">
-          <Button variant="outline" size="icon" className="mr-2" asChild>
-            <Link to="/">
-              <ChevronLeft className="h-4 w-4" />
-            </Link>
-          </Button>
-          <Skeleton className="h-6 w-32" />
+  // Memoize loading skeleton to prevent re-renders
+  const loadingSkeleton = useMemo(() => (
+    <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
+      <div className="flex items-center mb-6">
+        <Button variant="outline" size="icon" className="mr-2" asChild>
+          <Link to="/">
+            <ChevronLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <Skeleton className="h-6 w-32" />
+      </div>
+      
+      <div className="space-y-8">
+        <div className="space-y-4">
+          <Skeleton className="h-8 w-64 mx-auto" />
+          <Skeleton className="h-4 w-32 mx-auto" />
+          <Skeleton className="h-4 w-48 mx-auto" />
         </div>
         
-        <div className="space-y-8">
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-64 mx-auto" />
-            <Skeleton className="h-4 w-32 mx-auto" />
-            <Skeleton className="h-4 w-48 mx-auto" />
-          </div>
-          
-          <div className="space-y-8 mt-12">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="space-y-4 border-b pb-6">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-8 w-8 rounded-full" />
-                  <div className="space-x-2">
-                    <Skeleton className="h-8 w-8 rounded-full inline-block" />
-                    <Skeleton className="h-8 w-8 rounded-full inline-block" />
-                  </div>
+        <div className="space-y-8 mt-12">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="space-y-4 border-b pb-6">
+              <div className="flex items-center justify-between">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="space-x-2">
+                  <Skeleton className="h-8 w-8 rounded-full inline-block" />
+                  <Skeleton className="h-8 w-8 rounded-full inline-block" />
                 </div>
-                <Skeleton className="h-8 w-full" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-3/4" />
               </div>
-            ))}
-          </div>
+              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-4 w-full" />
+              <Skeleton className="h-4 w-3/4" />
+            </div>
+          ))}
         </div>
       </div>
-    );
+    </div>
+  ), []);
+
+  if (isLoadingDetail || !currentSurah) {
+    return loadingSkeleton;
   }
 
   return (
@@ -180,76 +185,80 @@ const SurahDetail = () => {
       </div>
       
       <div className="space-y-12 mt-12">
-        {currentSurah.ayat.map((ayah) => (
-          <div 
-            key={ayah.nomorAyat} 
-            className={cn(
-              "pb-6 border-b border-border/40 transition-all duration-300 group",
-              playingAyah === ayah.nomorAyat && "bg-primary/5 rounded-lg p-4 -mx-4"
-            )}
-            // Loading all audio at once can cause performance issues, so let's add a lazy loading hint
-            data-ayah-id={ayah.nomorAyat}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-medium text-sm">
-                {ayah.nomorAyat}
+        {currentSurah.ayat.map((ayah) => {
+          const isPlaying = playingAyah === ayah.nomorAyat;
+          const hasCopied = isCopied[ayah.nomorAyat];
+          
+          return (
+            <div 
+              key={`ayah-${ayah.nomorAyat}`}
+              className={cn(
+                "pb-6 border-b border-border/40 group",
+                isPlaying ? "bg-primary/5 rounded-lg p-4 -mx-4" : ""
+              )}
+              data-ayah-id={ayah.nomorAyat}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-medium text-sm">
+                  {ayah.nomorAyat}
+                </div>
+                
+                <div className="flex items-center space-x-2 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 rounded-full"
+                    onClick={() => copyAyahText(ayah.teksArab, ayah.nomorAyat)}
+                  >
+                    {hasCopied ? (
+                      <Check className="h-4 w-4 text-primary" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </Button>
+                  
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      "h-8 w-8 rounded-full",
+                      isPlaying && "text-primary"
+                    )}
+                    onClick={() => playAyahAudio(ayah.nomorAyat)}
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
               
-              <div className="flex items-center space-x-2 sm:opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full"
-                  onClick={() => copyAyahText(ayah.teksArab, ayah.nomorAyat)}
-                >
-                  {isCopied[ayah.nomorAyat] ? (
-                    <Check className="h-4 w-4 text-primary" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </Button>
-                
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    "h-8 w-8 rounded-full",
-                    playingAyah === ayah.nomorAyat && "text-primary"
-                  )}
-                  onClick={() => playAyahAudio(ayah.nomorAyat)}
-                >
-                  <Volume2 className="h-4 w-4" />
-                </Button>
-              </div>
+              <p className="text-right leading-loose text-xl md:text-2xl mb-4 font-quran">
+                {ayah.teksArab}
+              </p>
+              
+              {showTranslation && (
+                <div className="space-y-2">
+                  <p className="text-muted-foreground italic text-sm">
+                    {ayah.teksLatin}
+                  </p>
+                  <p className="text-foreground">
+                    {ayah.teksIndonesia}
+                  </p>
+                </div>
+              )}
+              
+              {isPlaying && ayah.audio && (
+                <div className="mt-4">
+                  <AudioPlayer
+                    key={`audio-${ayah.nomorAyat}`} 
+                    src={ayah.audio}
+                    title={`Ayat ${ayah.nomorAyat}`}
+                    onEnded={handleAudioEnded}
+                  />
+                </div>
+              )}
             </div>
-            
-            <p className="text-right leading-loose text-xl md:text-2xl mb-4 font-quran">
-              {ayah.teksArab}
-            </p>
-            
-            {showTranslation && (
-              <div className="space-y-2 animate-fade-in">
-                <p className="text-muted-foreground italic text-sm">
-                  {ayah.teksLatin}
-                </p>
-                <p className="text-foreground">
-                  {ayah.teksIndonesia}
-                </p>
-              </div>
-            )}
-            
-            {playingAyah === ayah.nomorAyat && ayah.audio && (
-              <div className="mt-4 animate-fade-in">
-                <AudioPlayer
-                  key={`audio-${ayah.nomorAyat}`}
-                  src={ayah.audio}
-                  title={`Ayat ${ayah.nomorAyat}`}
-                  onEnded={handleAudioEnded}
-                />
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
