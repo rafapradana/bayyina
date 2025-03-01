@@ -1,11 +1,8 @@
-
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { BookOpen, Bookmark, Search, Volume, Languages, Moon, Sun } from "lucide-react";
-
 const AboutPage = () => {
-  return (
-    <div className="min-h-screen flex flex-col">
+  return <div className="min-h-screen flex flex-col">
       <Header />
       
       <main className="flex-1 pt-24 pb-12">
@@ -21,7 +18,7 @@ const AboutPage = () => {
           
           <div className="space-y-8">
             <section className="glass-card p-6">
-              <h2 className="text-xl font-semibold mb-4">Apa itu Al-Quran Digital?</h2>
+              <h2 className="text-xl font-semibold mb-4">Apa itu Bayyina ?</h2>
               <p className="text-muted-foreground mb-4">
                 Al-Quran Digital adalah aplikasi web yang memungkinkan pengguna 
                 untuk membaca Al-Quran lengkap dengan terjemahan bahasa Indonesia 
@@ -127,8 +124,6 @@ const AboutPage = () => {
       </main>
       
       <Footer />
-    </div>
-  );
+    </div>;
 };
-
 export default AboutPage;
