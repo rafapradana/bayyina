@@ -1,7 +1,7 @@
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { ChevronLeft, Copy, Check, Volume2, Eye, EyeOff } from "lucide-react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useQuran } from "@/context/QuranContext";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,8 +10,11 @@ import { useToast } from "@/components/ui/use-toast";
 import AudioPlayer from "./AudioPlayer";
 import { cn } from "@/lib/utils";
 
-const SurahDetail = () => {
-  const { id } = useParams<{ id: string }>();
+interface SurahDetailProps {
+  surahId?: string;
+}
+
+const SurahDetail = ({ surahId }: SurahDetailProps) => {
   const navigate = useNavigate();
   const { currentSurah, isLoadingDetail, fetchSurahDetail, showTranslation, toggleTranslation } = useQuran();
   const [playingAyah, setPlayingAyah] = useState<number | null>(null);
@@ -19,25 +22,24 @@ const SurahDetail = () => {
   const { toast } = useToast();
   const contentRef = useRef<HTMLDivElement>(null);
   
-  // Validate ID and fetch surah data
+  // Validate ID and fetch surah data - only run when surahId changes
   useEffect(() => {
-    if (!id) {
+    if (!surahId) {
       navigate("/");
       return;
     }
     
-    const surahId = parseInt(id);
+    const surahIdNumber = parseInt(surahId);
     
-    if (isNaN(surahId) || surahId < 1 || surahId > 114) {
+    if (isNaN(surahIdNumber) || surahIdNumber < 1 || surahIdNumber > 114) {
       navigate("/not-found");
       return;
     }
     
-    fetchSurahDetail(surahId);
-    
     // Reset playing ayah when changing surahs
     setPlayingAyah(null);
-  }, [id, navigate, fetchSurahDetail]);
+    fetchSurahDetail(surahIdNumber);
+  }, [surahId, navigate, fetchSurahDetail]);
 
   // Scroll to top when surah changes
   useEffect(() => {
@@ -46,15 +48,14 @@ const SurahDetail = () => {
     }
     
     window.scrollTo(0, 0);
-  }, [id]);
+  }, [surahId]);
 
   // Copy ayah text to clipboard - memoized with useCallback
   const copyAyahText = useCallback(async (text: string, ayahNumber: number) => {
     try {
       await navigator.clipboard.writeText(text);
       
-      // Update state immutably to prevent unnecessary re-renders
-      setIsCopied((prev) => ({ ...prev, [ayahNumber]: true }));
+      setIsCopied(prev => ({ ...prev, [ayahNumber]: true }));
       
       toast({
         title: "Teks disalin",
@@ -64,7 +65,7 @@ const SurahDetail = () => {
       
       // Clear copied state after delay
       setTimeout(() => {
-        setIsCopied((prev) => ({ ...prev, [ayahNumber]: false }));
+        setIsCopied(prev => ({ ...prev, [ayahNumber]: false }));
       }, 2000);
     } catch (err) {
       toast({
@@ -77,13 +78,90 @@ const SurahDetail = () => {
 
   // Handle audio playback - memoized with useCallback
   const playAyahAudio = useCallback((ayahNumber: number) => {
-    setPlayingAyah((current) => current === ayahNumber ? null : ayahNumber);
+    setPlayingAyah(prev => prev === ayahNumber ? null : ayahNumber);
   }, []);
 
   // When audio finishes playing - memoized with useCallback
   const handleAudioEnded = useCallback(() => {
     setPlayingAyah(null);
   }, []);
+
+  // Memoize Ayah component to prevent unnecessary re-renders
+  const AyahItem = useMemo(() => {
+    return ({ ayah, isPlaying, hasCopied }: { 
+      ayah: { nomorAyat: number; teksArab: string; teksLatin: string; teksIndonesia: string; audio: string }; 
+      isPlaying: boolean;
+      hasCopied: boolean;
+    }) => (
+      <div 
+        key={`ayah-${ayah.nomorAyat}`}
+        className={cn(
+          "pb-6 border-b border-border/40 group",
+          isPlaying ? "bg-primary/5 rounded-lg p-4 -mx-4" : ""
+        )}
+        data-ayah-id={ayah.nomorAyat}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-medium text-sm">
+            {ayah.nomorAyat}
+          </div>
+          
+          <div className="flex items-center space-x-2 opacity-100 sm:opacity-70 group-hover:opacity-100">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full"
+              onClick={() => copyAyahText(ayah.teksArab, ayah.nomorAyat)}
+            >
+              {hasCopied ? (
+                <Check className="h-4 w-4 text-primary" />
+              ) : (
+                <Copy className="h-4 w-4" />
+              )}
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              className={cn(
+                "h-8 w-8 rounded-full",
+                isPlaying && "text-primary"
+              )}
+              onClick={() => playAyahAudio(ayah.nomorAyat)}
+            >
+              <Volume2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+        
+        <p className="text-right leading-loose text-xl md:text-2xl mb-4 font-quran">
+          {ayah.teksArab}
+        </p>
+        
+        {showTranslation && (
+          <div className="space-y-2">
+            <p className="text-muted-foreground italic text-sm">
+              {ayah.teksLatin}
+            </p>
+            <p className="text-foreground">
+              {ayah.teksIndonesia}
+            </p>
+          </div>
+        )}
+        
+        {isPlaying && ayah.audio && (
+          <div className="mt-4">
+            <AudioPlayer
+              key={`player-${ayah.nomorAyat}`}
+              src={ayah.audio}
+              title={`Ayat ${ayah.nomorAyat}`}
+              onEnded={handleAudioEnded}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }, [copyAyahText, playAyahAudio, handleAudioEnded, showTranslation]);
 
   // Memoize loading skeleton to prevent re-renders
   const loadingSkeleton = useMemo(() => (
@@ -156,6 +234,7 @@ const SurahDetail = () => {
         {currentSurah.audioFull && (
           <div className="mt-6 max-w-md mx-auto">
             <AudioPlayer
+              key="full-surah-audio"
               src={currentSurah.audioFull}
               title={`Murottal Surah ${currentSurah.namaLatin}`}
             />
@@ -185,80 +264,14 @@ const SurahDetail = () => {
       </div>
       
       <div className="space-y-12 mt-12">
-        {currentSurah.ayat.map((ayah) => {
-          const isPlaying = playingAyah === ayah.nomorAyat;
-          const hasCopied = isCopied[ayah.nomorAyat];
-          
-          return (
-            <div 
-              key={`ayah-${ayah.nomorAyat}`}
-              className={cn(
-                "pb-6 border-b border-border/40 group",
-                isPlaying ? "bg-primary/5 rounded-lg p-4 -mx-4" : ""
-              )}
-              data-ayah-id={ayah.nomorAyat}
-            >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-medium text-sm">
-                  {ayah.nomorAyat}
-                </div>
-                
-                <div className="flex items-center space-x-2 sm:opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full"
-                    onClick={() => copyAyahText(ayah.teksArab, ayah.nomorAyat)}
-                  >
-                    {hasCopied ? (
-                      <Check className="h-4 w-4 text-primary" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn(
-                      "h-8 w-8 rounded-full",
-                      isPlaying && "text-primary"
-                    )}
-                    onClick={() => playAyahAudio(ayah.nomorAyat)}
-                  >
-                    <Volume2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              
-              <p className="text-right leading-loose text-xl md:text-2xl mb-4 font-quran">
-                {ayah.teksArab}
-              </p>
-              
-              {showTranslation && (
-                <div className="space-y-2">
-                  <p className="text-muted-foreground italic text-sm">
-                    {ayah.teksLatin}
-                  </p>
-                  <p className="text-foreground">
-                    {ayah.teksIndonesia}
-                  </p>
-                </div>
-              )}
-              
-              {isPlaying && ayah.audio && (
-                <div className="mt-4">
-                  <AudioPlayer
-                    key={`audio-${ayah.nomorAyat}`} 
-                    src={ayah.audio}
-                    title={`Ayat ${ayah.nomorAyat}`}
-                    onEnded={handleAudioEnded}
-                  />
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {currentSurah.ayat.map((ayah) => (
+          <AyahItem
+            key={ayah.nomorAyat}
+            ayah={ayah}
+            isPlaying={playingAyah === ayah.nomorAyat}
+            hasCopied={!!isCopied[ayah.nomorAyat]}
+          />
+        ))}
       </div>
     </div>
   );

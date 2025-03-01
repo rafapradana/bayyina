@@ -12,7 +12,7 @@ const SurahPage = () => {
       <Header />
       
       <main className="flex-1">
-        <SurahDetail />
+        <SurahDetail surahId={id} />
       </main>
       
       <Footer />
