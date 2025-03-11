@@ -1,69 +1,103 @@
-# Welcome to your Lovable project
+# Bayyina - Al-Quran Digital
 
-## Project info
+<div align="center">
+  <img src="public/logo.png" alt="Bayyina Logo" width="150" />
+  <p><em>Aplikasi Al-Quran digital dengan fitur modern dan interface yang ramah pengguna</em></p>
+</div>
 
-**URL**: https://lovable.dev/projects/c8d157bb-41f6-46d2-86d5-fae389ec6658
+## 🌟 Tentang Aplikasi
 
-## How can I edit this code?
+Bayyina adalah aplikasi web Al-Quran digital yang memungkinkan pengguna untuk membaca Al-Quran lengkap dengan terjemahan bahasa Indonesia dan mendengarkan murottal (bacaan) dari setiap surah dan ayat dari berbagai qori (pembaca) pilihan. Aplikasi ini dirancang dengan antarmuka yang modern, bersih, dan mudah digunakan.
 
-There are several ways of editing your application.
+## ✨ Fitur Utama
 
-**Use Lovable**
+- **Bacaan Al-Quran Lengkap** - Semua 114 surah Al-Quran lengkap dengan teks Arab, latin, dan terjemahan bahasa Indonesia.
+- **Murottal Audio** - Dengarkan bacaan Al-Quran untuk setiap surah dengan pilihan berbagai qori terkenal.
+- **Pilihan Qori** - Pilih qori favorit dari beberapa pilihan seperti Abdullah Al-Juhany, Abdul Muhsin Al-Qasim, Abdurrahman as-Sudais, Ibrahim Al-Dossari, dan Misyari Rasyid Al-Afasi.
+- **Toggle Terjemahan** - Tampilkan atau sembunyikan terjemahan sesuai kebutuhan dengan satu klik.
+- **Navigasi Antar Surah** - Berpindah ke surah sebelumnya atau selanjutnya dengan mudah.
+- **Pencarian Surah** - Temukan surah dengan cepat menggunakan fitur pencarian berdasarkan nama atau nomor surah.
+- **Mode Gelap & Terang** - Sesuaikan tampilan dengan preferensi Anda, pilih antara mode gelap atau terang.
+- **Bookmark** - Simpan ayat favorit untuk akses cepat di kemudian hari.
+- **Terakhir Dibaca** - Tandai dan langsung kembali ke ayat terakhir yang Anda baca untuk melanjutkan bacaan.
+- **Lazy Loading Audio** - Audio hanya dimuat saat tombol play ditekan, menghemat bandwidth dan mempercepat performa.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/c8d157bb-41f6-46d2-86d5-fae389ec6658) and start prompting.
+## 🛠️ Teknologi
 
-Changes made via Lovable will be committed automatically to this repo.
+Bayyina dibangun dengan teknologi modern:
 
-**Use your preferred IDE**
+- [React](https://reactjs.org/) - Library JavaScript untuk membangun antarmuka pengguna
+- [React Router](https://reactrouter.com/) - Navigasi antar halaman
+- [TypeScript](https://www.typescriptlang.org/) - Superset JavaScript dengan pengetikan yang kuat
+- [Tailwind CSS](https://tailwindcss.com/) - Framework CSS untuk desain yang cepat dan responsif
+- [Shadcn UI](https://ui.shadcn.com/) - Komponen UI yang dapat digunakan kembali
+- [Lucide Icons](https://lucide.dev/) - Set ikon yang indah dan konsisten
+- [Vite](https://vitejs.dev/) - Build tool yang cepat untuk pengembangan modern
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 🚀 Instalasi dan Penggunaan
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Prasyarat
 
-Follow these steps:
+- Node.js versi 16 atau lebih tinggi
+- NPM atau Yarn
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### Langkah Instalasi
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+1. Clone repositori
+   ```bash
+   git clone https://github.com/username/bayyina.git
+   cd bayyina
+   ```
 
-# Step 3: Install the necessary dependencies.
-npm i
+2. Install dependensi
+   ```bash
+   npm install
+   # atau
+   yarn install
+   ```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+3. Jalankan aplikasi dalam mode pengembangan
+   ```bash
+   npm run dev
+   # atau
+   yarn dev
+   ```
+
+4. Buka [http://localhost:5173](http://localhost:5173) untuk melihat aplikasi di browser
+
+### Build untuk Produksi
+
+```bash
+npm run build
+# atau
+yarn build
 ```
 
-**Edit a file directly in GitHub**
+## 📊 API dan Sumber Data
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+Data Al-Quran yang ditampilkan dalam aplikasi ini diambil dari API yang disediakan oleh equran.id melalui:
 
-**Use GitHub Codespaces**
+```
+https://equran.id/apidev/v2
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Data ini mencakup teks Arab, teks latin, terjemahan bahasa Indonesia, dan file audio murottal untuk setiap surah dan ayat dari berbagai qori.
 
-## What technologies are used for this project?
+## 👨‍💻 Developer
 
-This project is built with .
+Aplikasi ini dikembangkan oleh Muhammad Rafa Shaquille Pradana.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Media Sosial
+- Instagram: [@rafashaqq](https://www.instagram.com/rafashaqq/)
+- Twitter/X: [@rafapradanaa](https://x.com/rafapradanaa)
+- GitHub: [@rafapradana](https://github.com/rafapradana)
 
-## How can I deploy this project?
+## 📜 Lisensi
 
-Simply open [Lovable](https://lovable.dev/projects/c8d157bb-41f6-46d2-86d5-fae389ec6658) and click on Share -> Publish.
+Proyek ini dilisensikan di bawah [MIT License](LICENSE).
 
-## I want to use a custom domain - is that possible?
+## 🙏 Penghargaan
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+- Terima kasih kepada [equran.id](https://equran.id) untuk menyediakan API Al-Quran yang komprehensif.
+- Semua qori yang membacakan ayat-ayat suci Al-Quran.
+- Semua kontributor yang telah membantu dalam pengembangan aplikasi ini.
