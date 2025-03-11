@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { LoginButton } from "@/components/auth/LoginButton";
+
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -42,6 +44,7 @@ const Header = () => {
         </nav>
 
         <div className="flex items-center gap-2">
+          <LoginButton />
           <ThemeToggle />
           
           {/* Mobile Menu Button */}

@@ -1,81 +1,169 @@
-
 import React, { useState, useRef, useEffect } from "react";
-import { Play, Pause, Volume2, VolumeX, SkipBack, SkipForward } from "lucide-react";
+import { Play, Pause, Volume2, VolumeX, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import { useQuran, AVAILABLE_QARIS } from "@/context/QuranContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface AudioPlayerProps {
-  src: string;
+  src: { [key: string]: string } | string; // Support both legacy string and new object format
   title: string;
   onEnded?: () => void;
   className?: string;
 }
 
 const AudioPlayer = ({ src, title, onEnded, className }: AudioPlayerProps) => {
+  const { selectedQari, setSelectedQari, getQariName } = useQuran();
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.7);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [audioLoaded, setAudioLoaded] = useState(false);
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const audio = new Audio(src);
-    audioRef.current = audio;
+  // Get current audio source based on selected qari
+  const getAudioSource = (): string => {
+    if (typeof src === 'string') {
+      console.log('Using legacy audio format (string):', src);
+      return src; // Legacy format support
+    }
     
-    const handleCanPlay = () => {
-      setIsLoading(false);
-      setDuration(audio.duration);
-    };
+    const audioSrc = src[selectedQari] || Object.values(src)[0]; // Use selected qari or first available
+    console.log(`Using audio for qari ${selectedQari}:`, audioSrc);
+    return audioSrc;
+  };
+
+  // Lazy initialize audio only when play is pressed
+  const initializeAudio = () => {
+    if (audioLoaded) return true;
     
-    const handleTimeUpdate = () => {
-      setProgress(audio.currentTime);
-    };
-    
-    const handleEnded = () => {
-      setIsPlaying(false);
-      setProgress(0);
-      if (onEnded) onEnded();
-    };
-    
-    const handleError = () => {
-      setIsLoading(false);
+    try {
+      setIsLoading(true);
+      const audioSource = getAudioSource();
+      console.log('Initializing audio with source:', audioSource);
+      
+      if (!audioSource) {
+        console.error('No valid audio source found');
+        toast({
+          title: "Gagal memuat audio",
+          description: "Tidak ada sumber audio yang valid ditemukan.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return false;
+      }
+      
+      const audio = new Audio(audioSource);
+      audioRef.current = audio;
+      
+      const handleCanPlay = () => {
+        setIsLoading(false);
+        setDuration(audio.duration);
+      };
+      
+      const handleTimeUpdate = () => {
+        setProgress(audio.currentTime);
+      };
+      
+      const handleEnded = () => {
+        setIsPlaying(false);
+        setProgress(0);
+        if (onEnded) onEnded();
+      };
+      
+      const handleError = () => {
+        setIsLoading(false);
+        toast({
+          title: "Gagal memuat audio",
+          description: "Terjadi kesalahan saat memuat audio. Silakan coba lagi nanti.",
+          variant: "destructive",
+        });
+      };
+      
+      // Set up event listeners
+      audio.addEventListener("canplay", handleCanPlay);
+      audio.addEventListener("timeupdate", handleTimeUpdate);
+      audio.addEventListener("ended", handleEnded);
+      audio.addEventListener("error", handleError);
+      
+      // Set initial volume
+      audio.volume = volume;
+      
+      setAudioLoaded(true);
+      return true;
+    } catch (error) {
+      console.error("Error initializing audio:", error);
       toast({
         title: "Gagal memuat audio",
         description: "Terjadi kesalahan saat memuat audio. Silakan coba lagi nanti.",
         variant: "destructive",
       });
-    };
-    
-    // Set up event listeners
-    audio.addEventListener("canplay", handleCanPlay);
-    audio.addEventListener("timeupdate", handleTimeUpdate);
-    audio.addEventListener("ended", handleEnded);
-    audio.addEventListener("error", handleError);
-    
-    // Set initial volume
-    audio.volume = volume;
-    
-    // Clean up on unmount
-    return () => {
-      audio.pause();
-      audio.removeEventListener("canplay", handleCanPlay);
-      audio.removeEventListener("timeupdate", handleTimeUpdate);
-      audio.removeEventListener("ended", handleEnded);
-      audio.removeEventListener("error", handleError);
-    };
-  }, [src, onEnded, toast]);
+      setIsLoading(false);
+      return false;
+    }
+  };
 
+  // Change audio source when qari changes
+  useEffect(() => {
+    if (!audioLoaded) return;
+    
+    // Clean up old audio
+    if (audioRef.current) {
+      const oldAudio = audioRef.current;
+      oldAudio.pause();
+      oldAudio.src = "";
+      oldAudio.load();
+    }
+    
+    // Reset state
+    setIsPlaying(false);
+    setProgress(0);
+    setAudioLoaded(false);
+    audioRef.current = null;
+    
+    // Show success toast when changing qari
+    toast({
+      title: "Qari diubah",
+      description: `Murottal beralih ke ${getQariName(selectedQari)}`,
+      variant: "default",
+    });
+  }, [selectedQari, getQariName, toast]);
+
+  // Update volume when changed
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = isMuted ? 0 : volume;
     }
   }, [volume, isMuted]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        const audio = audioRef.current;
+        audio.pause();
+        audio.src = "";
+        audio.load();
+        
+        // Clean up event listeners
+        const events = ["canplay", "timeupdate", "ended", "error"];
+        events.forEach(event => {
+          audio.removeEventListener(event, () => {});
+        });
+      }
+    };
+  }, []);
 
   const formatTime = (time: number) => {
     if (!time) return "0:00";
@@ -86,6 +174,8 @@ const AudioPlayer = ({ src, title, onEnded, className }: AudioPlayerProps) => {
   };
 
   const togglePlay = () => {
+    if (!audioLoaded && !initializeAudio()) return;
+    
     if (!audioRef.current) return;
     
     if (isPlaying) {
@@ -121,20 +211,8 @@ const AudioPlayer = ({ src, title, onEnded, className }: AudioPlayerProps) => {
     audioRef.current.volume = newMuteState ? 0 : volume;
   };
 
-  const jumpBackward = () => {
-    if (!audioRef.current) return;
-    
-    const newTime = Math.max(0, audioRef.current.currentTime - 5);
-    audioRef.current.currentTime = newTime;
-    setProgress(newTime);
-  };
-
-  const jumpForward = () => {
-    if (!audioRef.current) return;
-    
-    const newTime = Math.min(audioRef.current.duration, audioRef.current.currentTime + 5);
-    audioRef.current.currentTime = newTime;
-    setProgress(newTime);
+  const handleQariChange = (qariId: string) => {
+    setSelectedQari(qariId);
   };
 
   return (
@@ -143,9 +221,34 @@ const AudioPlayer = ({ src, title, onEnded, className }: AudioPlayerProps) => {
       className
     )}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium truncate max-w-[200px]">{title}</h3>
-        <div className="text-xs text-muted-foreground">
-          {formatTime(progress)} / {formatTime(duration)}
+        <h3 className="text-sm font-medium truncate max-w-[200px]">
+          {title}
+        </h3>
+        <div className="flex items-center gap-2">
+          <div className="text-xs text-muted-foreground">
+            {formatTime(progress)} / {formatTime(duration)}
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 rounded-md text-xs flex items-center gap-1">
+                {getQariName(selectedQari)}
+                <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {AVAILABLE_QARIS.map((qari) => (
+                <DropdownMenuItem 
+                  key={qari.id}
+                  className={cn(
+                    qari.id === selectedQari && "bg-primary/10 font-medium"
+                  )}
+                  onClick={() => handleQariChange(qari.id)}
+                >
+                  {qari.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       
@@ -183,16 +286,7 @@ const AudioPlayer = ({ src, title, onEnded, className }: AudioPlayerProps) => {
           />
         </div>
         
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full h-8 w-8"
-            onClick={jumpBackward}
-          >
-            <SkipBack className="h-4 w-4" />
-          </Button>
-          
+        <div className="flex items-center justify-center">
           <Button
             disabled={isLoading}
             variant="outline"
@@ -210,15 +304,6 @@ const AudioPlayer = ({ src, title, onEnded, className }: AudioPlayerProps) => {
             ) : (
               <Play className="h-4 w-4 text-primary" />
             )}
-          </Button>
-          
-          <Button
-            variant="ghost"
-            size="icon"
-            className="rounded-full h-8 w-8"
-            onClick={jumpForward}
-          >
-            <SkipForward className="h-4 w-4" />
           </Button>
         </div>
         

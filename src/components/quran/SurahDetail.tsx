@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { ChevronLeft, Copy, Check, Volume2, Eye, EyeOff } from "lucide-react";
+import { ChevronLeft, Copy, Check, Volume2, Eye, EyeOff, ArrowLeft, ArrowRight } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuran } from "@/context/QuranContext";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import AudioPlayer from "./AudioPlayer";
 import { cn } from "@/lib/utils";
+import { BookmarkButton } from "./BookmarkButton";
+import { LastReadButton } from "./LastReadButton";
+import { useAuth } from "@/context/AuthContext";
 
 interface SurahDetailProps {
   surahId?: string;
@@ -16,11 +18,12 @@ interface SurahDetailProps {
 
 const SurahDetail = ({ surahId }: SurahDetailProps) => {
   const navigate = useNavigate();
-  const { currentSurah, isLoadingDetail, fetchSurahDetail, showTranslation, toggleTranslation } = useQuran();
-  const [playingAyah, setPlayingAyah] = useState<number | null>(null);
+  const { currentSurah, isLoadingDetail, fetchSurahDetail, showTranslation, toggleTranslation, surahs } = useQuran();
   const [isCopied, setIsCopied] = useState<Record<number, boolean>>({});
   const { toast } = useToast();
   const contentRef = useRef<HTMLDivElement>(null);
+  const ayahElementsRef = useRef<HTMLElement[]>([]);
+  const { user } = useAuth();
   
   // Validate ID and fetch surah data - only run when surahId changes
   useEffect(() => {
@@ -28,18 +31,17 @@ const SurahDetail = ({ surahId }: SurahDetailProps) => {
       navigate("/");
       return;
     }
-    
     const surahIdNumber = parseInt(surahId);
-    
     if (isNaN(surahIdNumber) || surahIdNumber < 1 || surahIdNumber > 114) {
       navigate("/not-found");
       return;
     }
-    
     // Reset playing ayah when changing surahs
-    setPlayingAyah(null);
-    fetchSurahDetail(surahIdNumber);
-  }, [surahId, navigate, fetchSurahDetail]);
+    if (currentSurah?.nomor !== surahIdNumber) {
+      console.log('Fetching surah detail for ID:', surahIdNumber);
+      fetchSurahDetail(surahIdNumber);
+    }
+  }, [surahId, navigate, fetchSurahDetail, currentSurah]);
 
   // Scroll to top when surah changes
   useEffect(() => {
@@ -76,92 +78,68 @@ const SurahDetail = ({ surahId }: SurahDetailProps) => {
     }
   }, [toast]);
 
-  // Handle audio playback - memoized with useCallback
-  const playAyahAudio = useCallback((ayahNumber: number) => {
-    setPlayingAyah(prev => prev === ayahNumber ? null : ayahNumber);
-  }, []);
-
-  // When audio finishes playing - memoized with useCallback
-  const handleAudioEnded = useCallback(() => {
-    setPlayingAyah(null);
-  }, []);
-
   // Memoize Ayah component to prevent unnecessary re-renders
   const AyahItem = useMemo(() => {
-    return ({ ayah, isPlaying, hasCopied }: { 
-      ayah: { nomorAyat: number; teksArab: string; teksLatin: string; teksIndonesia: string; audio: string }; 
-      isPlaying: boolean;
+    return ({ ayah, hasCopied }: { 
+      ayah: { nomorAyat: number; teksArab: string; teksLatin: string; teksIndonesia: string; audio: { [key: string]: string } | string }; 
       hasCopied: boolean;
-    }) => (
-      <div 
-        key={`ayah-${ayah.nomorAyat}`}
-        className={cn(
-          "pb-6 border-b border-border/40 group",
-          isPlaying ? "bg-primary/5 rounded-lg p-4 -mx-4" : ""
-        )}
-        data-ayah-id={ayah.nomorAyat}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-medium text-sm">
-            {ayah.nomorAyat}
+    }) => {
+      console.log('Ayah data:', ayah);
+      return (
+        <div 
+          key={`ayah-${ayah.nomorAyat}`}
+          className="pb-6 border-b border-border/40"
+          data-ayah-id={ayah.nomorAyat}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-medium text-sm">
+              {ayah.nomorAyat}
+            </div>
+            
+            <div className="flex items-center space-x-2 opacity-100 sm:opacity-70 group-hover:opacity-100">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full"
+                onClick={() => copyAyahText(ayah.teksArab, ayah.nomorAyat)}
+              >
+                {hasCopied ? (
+                  <Check className="h-4 w-4 text-primary" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+              <BookmarkButton 
+                surahId={currentSurah?.nomor || 0} 
+                surahName={currentSurah?.namaLatin || ''} 
+                ayahNumber={ayah.nomorAyat} 
+              />
+              <LastReadButton
+                surahId={currentSurah?.nomor || 0}
+                surahName={currentSurah?.namaLatin || ''}
+                ayahNumber={ayah.nomorAyat}
+              />
+            </div>
           </div>
           
-          <div className="flex items-center space-x-2 opacity-100 sm:opacity-70 group-hover:opacity-100">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full"
-              onClick={() => copyAyahText(ayah.teksArab, ayah.nomorAyat)}
-            >
-              {hasCopied ? (
-                <Check className="h-4 w-4 text-primary" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
-            </Button>
-            
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "h-8 w-8 rounded-full",
-                isPlaying && "text-primary"
-              )}
-              onClick={() => playAyahAudio(ayah.nomorAyat)}
-            >
-              <Volume2 className="h-4 w-4" />
-            </Button>
-          </div>
+          <p className="text-right leading-loose text-xl md:text-2xl mb-4 font-quran">
+            {ayah.teksArab}
+          </p>
+          
+          {showTranslation && (
+            <div className="space-y-2">
+              <p className="text-muted-foreground italic text-sm">
+                {ayah.teksLatin}
+              </p>
+              <p className="text-foreground">
+                {ayah.teksIndonesia}
+              </p>
+            </div>
+          )}
         </div>
-        
-        <p className="text-right leading-loose text-xl md:text-2xl mb-4 font-quran">
-          {ayah.teksArab}
-        </p>
-        
-        {showTranslation && (
-          <div className="space-y-2">
-            <p className="text-muted-foreground italic text-sm">
-              {ayah.teksLatin}
-            </p>
-            <p className="text-foreground">
-              {ayah.teksIndonesia}
-            </p>
-          </div>
-        )}
-        
-        {isPlaying && ayah.audio && (
-          <div className="mt-4">
-            <AudioPlayer
-              key={`player-${ayah.nomorAyat}`}
-              src={ayah.audio}
-              title={`Ayat ${ayah.nomorAyat}`}
-              onEnded={handleAudioEnded}
-            />
-          </div>
-        )}
-      </div>
-    );
-  }, [copyAyahText, playAyahAudio, handleAudioEnded, showTranslation]);
+      );
+    };
+  }, [copyAyahText, showTranslation, currentSurah]);
 
   // Memoize loading skeleton to prevent re-renders
   const loadingSkeleton = useMemo(() => (
@@ -202,9 +180,30 @@ const SurahDetail = ({ surahId }: SurahDetailProps) => {
     </div>
   ), []);
 
+  // Get previous and next surah information
+  const getAdjacentSurahs = useMemo(() => {
+    if (!currentSurah || !surahs.length) return { prevSurah: null, nextSurah: null };
+    
+    const currentSurahNumber = currentSurah.nomor;
+    let prevSurah = null;
+    let nextSurah = null;
+    
+    if (currentSurahNumber > 1) {
+      prevSurah = surahs.find(surah => surah.nomor === currentSurahNumber - 1) || null;
+    }
+    
+    if (currentSurahNumber < 114) {
+      nextSurah = surahs.find(surah => surah.nomor === currentSurahNumber + 1) || null;
+    }
+    
+    return { prevSurah, nextSurah };
+  }, [currentSurah, surahs]);
+
   if (isLoadingDetail || !currentSurah) {
     return loadingSkeleton;
   }
+
+  console.log('Loading:', isLoadingDetail); console.log('Ayat:', currentSurah.ayat);
 
   return (
     <div className="container mx-auto px-4 pt-24 pb-12 max-w-4xl" ref={contentRef}>
@@ -217,6 +216,14 @@ const SurahDetail = ({ surahId }: SurahDetailProps) => {
         <h1 className="text-lg font-medium">
           Surah {currentSurah.namaLatin}
         </h1>
+        {user && (
+          <div className="ml-auto">
+            <BookmarkButton 
+              surahId={currentSurah.nomor} 
+              surahName={currentSurah.namaLatin} 
+            />
+          </div>
+        )}
       </div>
       
       <div className="text-center mb-12 space-y-4">
@@ -231,17 +238,60 @@ const SurahDetail = ({ surahId }: SurahDetailProps) => {
           </div>
         </div>
         
-        {currentSurah.audioFull && (
-          <div className="mt-6 max-w-md mx-auto">
+        {/* Navigation between surahs */}
+        <div className="flex items-center justify-between mt-6 mb-2">
+          {getAdjacentSurahs.prevSurah ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
+              asChild
+            >
+              <Link to={`/surah/${getAdjacentSurahs.prevSurah.nomor}`}>
+                <ArrowLeft className="h-4 w-4 text-primary" />
+                <span>
+                  <span className="text-muted-foreground mr-1 text-xs">{getAdjacentSurahs.prevSurah.nomor}.</span>
+                  <span className="text-sm">{getAdjacentSurahs.prevSurah.namaLatin}</span>
+                </span>
+              </Link>
+            </Button>
+          ) : (
+            <div></div>
+          )}
+          
+          {getAdjacentSurahs.nextSurah ? (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-2 hover:bg-primary/10 transition-colors"
+              asChild
+            >
+              <Link to={`/surah/${getAdjacentSurahs.nextSurah.nomor}`}>
+                <span>
+                  <span className="text-muted-foreground mr-1 text-xs">{getAdjacentSurahs.nextSurah.nomor}.</span>
+                  <span className="text-sm">{getAdjacentSurahs.nextSurah.namaLatin}</span>
+                </span>
+                <ArrowRight className="h-4 w-4 text-primary" />
+              </Link>
+            </Button>
+          ) : (
+            <div></div>
+          )}
+        </div>
+        
+        {currentSurah && currentSurah.audioFull && (
+          <div className="sticky bottom-0 left-0 right-0 bg-background border-t border-border z-10">
             <AudioPlayer
-              key="full-surah-audio"
+              key={currentSurah.nomor}
               src={currentSurah.audioFull}
               title={`Murottal Surah ${currentSurah.namaLatin}`}
             />
           </div>
         )}
-        
-        <div className="flex justify-center mt-6">
+      </div>
+
+      <div className="sticky top-20 z-10 py-2 bg-background/80 backdrop-blur-md border-y">
+        <div className="container max-w-4xl mx-auto flex justify-center">
           <Button
             variant="outline"
             size="sm"
@@ -268,7 +318,6 @@ const SurahDetail = ({ surahId }: SurahDetailProps) => {
           <AyahItem
             key={ayah.nomorAyat}
             ayah={ayah}
-            isPlaying={playingAyah === ayah.nomorAyat}
             hasCopied={!!isCopied[ayah.nomorAyat]}
           />
         ))}

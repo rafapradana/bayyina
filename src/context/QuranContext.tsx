@@ -1,6 +1,14 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useToast } from "@/components/ui/use-toast";
+
+// List qori yang tersedia
+export const AVAILABLE_QARIS = [
+  { id: "01", name: "Abdullah Al-Juhany" },
+  { id: "02", name: "Abdul Muhsin Al-Qasim" },
+  { id: "03", name: "Abdurrahman as-Sudais" },
+  { id: "04", name: "Ibrahim Al-Dossari" },
+  { id: "05", name: "Misyari Rasyid Al-Afasi" }
+];
 
 interface Surah {
   nomor: number;
@@ -10,7 +18,9 @@ interface Surah {
   tempatTurun: string;
   arti: string;
   deskripsi: string;
-  audioFull: string;
+  audioFull: {
+    [key: string]: string;
+  }; // Ubah ke object untuk mendukung berbagai qori
 }
 
 interface Ayah {
@@ -18,7 +28,9 @@ interface Ayah {
   teksArab: string;
   teksLatin: string;
   teksIndonesia: string;
-  audio: string;
+  audio: {
+    [key: string]: string;
+  }; // Ubah ke object untuk mendukung berbagai qori
 }
 
 interface SurahDetail extends Surah {
@@ -32,9 +44,12 @@ interface QuranContextType {
   isLoadingDetail: boolean;
   error: string | null;
   showTranslation: boolean;
+  selectedQari: string;
   toggleTranslation: () => void;
   fetchSurahDetail: (id: number) => Promise<void>;
   searchSurahs: (query: string) => Surah[];
+  setSelectedQari: (qariId: string) => void;
+  getQariName: (qariId: string) => string;
 }
 
 const QuranContext = createContext<QuranContextType | undefined>(undefined);
@@ -51,8 +66,23 @@ export const QuranProvider: React.FC<{ children: React.ReactNode }> = ({
     const stored = localStorage.getItem("showTranslation");
     return stored ? JSON.parse(stored) : true;
   });
+  const [selectedQari, setSelectedQari] = useState<string>(() => {
+    const stored = localStorage.getItem("selectedQari");
+    return stored || "01"; // Default to Abdullah Al-Juhany
+  });
   
   const { toast } = useToast();
+
+  // Save qari preference to localStorage
+  useEffect(() => {
+    localStorage.setItem("selectedQari", selectedQari);
+  }, [selectedQari]);
+
+  // Fungsi untuk mendapatkan nama qari berdasarkan ID
+  const getQariName = (qariId: string): string => {
+    const qari = AVAILABLE_QARIS.find(q => q.id === qariId);
+    return qari ? qari.name : "Unknown";
+  };
 
   // Fetch all surahs on initial load
   useEffect(() => {
@@ -105,7 +135,29 @@ export const QuranProvider: React.FC<{ children: React.ReactNode }> = ({
       }
       
       const data = await response.json();
-      setCurrentSurah(data.data);
+      console.log(data.data);
+      
+      // Normalize audio format for backwards compatibility
+      const normalizedData = { ...data.data };
+      
+      // If audioFull is a string, convert it to object format
+      if (typeof normalizedData.audioFull === 'string') {
+        normalizedData.audioFull = {
+          "01": normalizedData.audioFull
+        };
+      } else if (!normalizedData.audioFull) {
+        normalizedData.audioFull = {}; // Ensure it's at least an empty object
+      }
+      
+      // Normalize audio format for each ayat
+      if (normalizedData.ayat) {
+        normalizedData.ayat = normalizedData.ayat.map(ayah => ({
+          ...ayah,
+          audio: typeof ayah.audio === 'string' ? { "01": ayah.audio } : (ayah.audio || {})
+        }));
+      }
+      
+      setCurrentSurah(normalizedData);
       setError(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Terjadi kesalahan saat memuat detail surah";
@@ -141,9 +193,12 @@ export const QuranProvider: React.FC<{ children: React.ReactNode }> = ({
         isLoadingDetail,
         error,
         showTranslation,
+        selectedQari,
         toggleTranslation,
         fetchSurahDetail,
         searchSurahs,
+        setSelectedQari,
+        getQariName,
       }}
     >
       {children}

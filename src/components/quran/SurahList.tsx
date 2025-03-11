@@ -47,42 +47,44 @@ const SurahList = () => {
               </p>
             </div>
           ) : (
-            filteredSurahs.map((surah) => (
-              <Link
-                key={surah.nomor}
-                to={`/surah/${surah.nomor}`}
-                className={cn(
-                  "block p-4 rounded-lg border border-border/40 hover:border-primary/40",
-                  "transition-all duration-300 hover:shadow-md glass-card"
-                )}
-              >
-                <div className="flex items-center">
-                  <div className="relative flex-shrink-0">
-                    <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 text-primary font-medium">
-                      {surah.nomor}
-                    </div>
-                  </div>
-                  
-                  <div className="ml-4 flex-1">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-foreground">
-                        {surah.namaLatin}
-                      </h3>
-                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-accent text-accent-foreground">
-                        {surah.tempatTurun === "Mekah" ? "Makkiyah" : "Madaniyah"}
-                      </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredSurahs.map((surah) => (
+                <Link
+                  key={surah.nomor}
+                  to={`/surah/${surah.nomor}`}
+                  className={cn(
+                    "block p-4 rounded-lg border border-border/40 hover:border-primary/40",
+                    "transition-all duration-300 hover:shadow-md glass-card"
+                  )}
+                >
+                  <div className="flex items-center">
+                    <div className="relative flex-shrink-0">
+                      <div className="flex items-center justify-center h-10 w-10 rounded-full bg-primary/10 text-primary font-medium">
+                        {surah.nomor}
+                      </div>
                     </div>
                     
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-sm text-muted-foreground">
-                        {surah.arti} • {surah.jumlahAyat} Ayat
-                      </p>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <div className="ml-4 flex-1">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium text-foreground">
+                          {surah.namaLatin}
+                        </h3>
+                        <span className="text-xs font-medium px-2 py-1 rounded-full bg-accent text-accent-foreground">
+                          {surah.tempatTurun === "Mekah" ? "Makkiyah" : "Madaniyah"}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between mt-1">
+                        <p className="text-sm text-muted-foreground">
+                          {surah.arti} • {surah.jumlahAyat} Ayat
+                        </p>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Link>
-            ))
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       )}

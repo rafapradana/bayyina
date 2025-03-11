@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import Header from "@/components/layout/Header";
@@ -6,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import SurahList from "@/components/quran/SurahList";
 import { useQuran } from "@/context/QuranContext";
 import { Badge } from "@/components/ui/badge";
+import { LastReadShortcut } from "@/components/quran/LastReadShortcut";
 
 const Index = () => {
   const { surahs, isLoading } = useQuran();
@@ -31,6 +31,7 @@ const Index = () => {
           </div>
           
           <div className="mt-12">
+            <LastReadShortcut />
             <SurahList />
           </div>
         </section>
